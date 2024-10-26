@@ -106,8 +106,35 @@ newStr[j++] = op;
 strIndex -= op;
 ```
 
-
 ##### ⭐️invert
+undoのための関数
+
+1. **保持**の場合
+```javascript
+        inverse.retain(op);
+        strIndex += op;
+```
+
+保持のまま
+strIndexを進める
+
+2. **挿入**の場合
+```javascript
+        inverse['delete'](op.length);
+```
+
+削除に変更
+
+3. **削除**の場合
+
+```javascript
+        inverse.insert(str.slice(strIndex, strIndex - op));
+        strIndex -= op;
+```
+挿入に変更 
+⚠️ op < 0であることに注意
+
+##### 
 
 
 
