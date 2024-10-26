@@ -64,6 +64,55 @@ length-1の削除数 + n
 2.配列の最後の要素が**削除**以外
 配列に操作をpush
 
+##### isNoop
+影響0の操作の判定
+
+ - opsの配列の長さが0
+ - カーソルを進める処理のみ
+
+##### toString
+ログ用、各要素の文字列にして連結
+
+##### fromJson
+JsonArrayをTextOperationに変換する
+
+##### ⭐️apply
+操作を適用される
+str.lengthと operation.baseLengthが一致しないときは、
+エラーをスローする
+
+```javascript
+    var newStr = [], j = 0;
+    var strIndex = 0;
+    var ops = this.ops;
+```
+
+1.**保持**の場合
+```javascript
+        newStr[j++] = str.slice(strIndex, strIndex + op);
+        strIndex += op;
+```
+strIndexからnだけの文字列を配列に格納
+strIndexを更新
+
+2.**挿入**の場合
+```javascript
+newStr[j++] = op;
+```
+配列に文字列格納
+
+3.**削除**の場合
+```javascript
+strIndex -= op;
+```
+
+
+##### ⭐️invert
+
+
+
+
+
 
 
 
