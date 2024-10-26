@@ -35,18 +35,18 @@ n < 0
 baseLength + n
 targetLength + n
 
-1.配列の最後の要素がRetainなら、last.n + n
+1. 配列の最後の要素がRetainなら、last.n + n
 
-2.配列の最後の要素がRetain意外なら、配列にpushする
+2. 配列の最後の要素がRetain意外なら、配列にpushする
 
 ##### insert
 文字列挿入
 targetLength + n
 
-1.配列の最後の要素が**挿入**
+1. 配列の最後の要素が**挿入**
 配列の最後の要素に文字列を連結
 
-2.配列の最後の要素が**削除**
+2. 配列の最後の要素が**削除**
 
  2-1. 配列のlength-2の要素が、**挿入**
  配列のlength-2の要素に文字列を連結
@@ -87,7 +87,7 @@ str.lengthと operation.baseLengthが一致しないときは、
     var ops = this.ops;
 ```
 
-1.**保持**の場合
+1. **保持**の場合
 ```javascript
         newStr[j++] = str.slice(strIndex, strIndex + op);
         strIndex += op;
@@ -95,16 +95,18 @@ str.lengthと operation.baseLengthが一致しないときは、
 strIndexからnだけの文字列を配列に格納
 strIndexを更新
 
-2.**挿入**の場合
+2. **挿入**の場合
 ```javascript
 newStr[j++] = op;
 ```
 配列に文字列格納
 
-3.**削除**の場合
+3. **削除**の場合
 ```javascript
 strIndex -= op;
 ```
+
+⚠️ op < 0であることに注意
 
 ##### ⭐️invert
 undoのための関数
@@ -134,7 +136,169 @@ strIndexを進める
 挿入に変更 
 ⚠️ op < 0であることに注意
 
-##### 
+##### ⭐️compose
+連続したOperationを一つにまとめる
+
+```javascript
+    if (operation1.targetLength !== operation2.baseLength) {
+      throw new Error("The base length of the second operation has to be the target length of the first operation");
+    }
+```
+Operationが連続に並んでいることをチェック
+
+```javascript
+      if (isDelete(op1)) {
+        operation['delete'](op1);
+        op1 = ops1[i1++];
+        continue;
+      }
+      if (isInsert(op2)) {
+        operation.insert(op2);
+        op2 = ops2[i2++];
+        continue;
+      }
+```
+
+op1が**削除**の場合
+op1を適用し、op1を一つ進める
+
+op2が**挿入**の場合
+op2を適用し、op2を一つ進める
+
+```javascript
+      if (isRetain(op1) && isRetain(op2)) {
+        if (op1 > op2) {
+          operation.retain(op2);
+          op1 = op1 - op2;
+          op2 = ops2[i2++];
+        } else if (op1 === op2) {
+          operation.retain(op1);
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          operation.retain(op1);
+          op2 = op2 - op1;
+          op1 = ops1[i1++];
+        }
+      } 
+```
+
+###### op1が**保持**かつ、op2が**保持**
+
+1. op1 > op2
+op2を適用して、
+op1のカーソル増加分を減らす
+op2を一つ進める
+
+2. op1 == op2
+op1を適用し、
+op1、op2を一つ進める
+
+3. op1 < op2
+op1を適用して、
+op2のカーソル増加分を減らす
+op1を一つ進める
+
+###### op1が挿入かつ、op2が削除
+
+```javascript
+      } else if (isInsert(op1) && isDelete(op2)) {
+        if (op1.length > -op2) {
+          op1 = op1.slice(-op2);
+          op2 = ops2[i2++];
+        } else if (op1.length === -op2) {
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          op2 = op2 + op1.length;
+          op1 = ops1[i1++];
+        }
+      } 
+```
+
+1.op1の挿入数が、op2の削除数を上回る場合
+op1の最初のop2数分を削除して、更新
+op2は一つ進む
+
+2. op1の挿入数と、op2の削除数が同数の場合
+op1は一つ進む
+op2は一つ進む
+
+3. op1の挿入数が、op2の削除数を下回る場合
+op2の削除数を、挿入数分だけ減らして更新
+op2 < 0
+
+op1は一つ進む
+
+###### op1が挿入かつ、op2が保持
+
+```javascript
+      else if (isInsert(op1) && isRetain(op2)) {
+        if (op1.length > op2) {
+          operation.insert(op1.slice(0, op2));
+          op1 = op1.slice(op2);
+          op2 = ops2[i2++];
+        } else if (op1.length === op2) {
+          operation.insert(op1);
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          operation.insert(op1);
+          op2 = op2 - op1.length;
+          op1 = ops1[i1++];
+        }
+      }
+```
+
+1. op1 の長さが op2 より大きい場合
+op2の長さ分だけ、op1の文字列を挿入
+op1を、op1をop2分だけ切り捨てて更新
+op2は一つ進む
+
+2. op1 の長さが op2 と等しい場合
+op1を挿入
+op1は一つ進む
+op2は一つ進む
+
+3. op1 の長さが op2 より小さい場合
+op1を挿入
+op2はop1の長さ分切り詰める
+op1は一つ進む
+
+###### op1は保持、op2が削除の場合
+
+```javascript
+else if (isRetain(op1) && isDelete(op2)) {
+        if (op1 > -op2) {
+          operation['delete'](op2);
+          op1 = op1 + op2;
+          op2 = ops2[i2++];
+        } else if (op1 === -op2) {
+          operation['delete'](op2);
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          operation['delete'](op1);
+          op2 = op2 + op1;
+          op1 = ops1[i1++];
+        }
+    }
+```
+
+1. op1 の長さが op2 より大きい場合
+op2の長さ分、削除を実行
+op1は、op2の長さ分切り詰められる
+op2は一つ進む
+
+2. op1 の長さが op2 と等しい場合
+op2の長さ分、削除を実行
+op1は一つ進む
+op2は一つ進む
+
+3. op1 の長さが op2 より小さい場合
+op1の長さ分、削除を実行
+op2は長さはop1分、切り詰められる
+op1は一つ進む
 
 
 
