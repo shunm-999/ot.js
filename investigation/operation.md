@@ -300,6 +300,35 @@ op1の長さ分、削除を実行
 op2は長さはop1分、切り詰められる
 op1は一つ進む
 
+##### getSimpleOp
+
+```javascript
+  function getSimpleOp (operation, fn) {
+    var ops = operation.ops;
+    var isRetain = TextOperation.isRetain;
+    switch (ops.length) {
+    case 1:
+      return ops[0];
+    case 2:
+      return isRetain(ops[0]) ? ops[1] : (isRetain(ops[1]) ? ops[0] : null);
+    case 3:
+      if (isRetain(ops[0]) && isRetain(ops[2])) { return ops[1]; }
+    }
+    return null;
+  }
+```
+
+1. 配列に一つだけの操作が含まれる場合
+その操作を返す
+
+2. 配列に２つの操作が含まれる場合
+どちらか片方が保持なら、もう一方を返す
+両方とも保持でないなら、null
+
+3. 配列に３つの操作が含まれる場合
+最初と最後が保持なら、真ん中の操作を返す
+それ以外はnull
+
 
 
 
