@@ -330,10 +330,78 @@ op1は一つ進む
 それ以外はnull
 
 
+###### getStartIndex
 
+```javascript
+  function getStartIndex (operation) {
+    if (isRetain(operation.ops[0])) { return operation.ops[0]; }
+    return 0;
+  }
+```
+最初の操作が保持なら、保持数を返す
+それ以外は0
 
+###### shouldBeComposedWith
 
+Composeするべきが判定する
+Undoでひとつ前の操作を打ち消すため
 
+```javascript
+  TextOperation.prototype.shouldBeComposedWith = function (other) {
+    if (this.isNoop() || other.isNoop()) { return true; }
+
+    var startA = getStartIndex(this), startB = getStartIndex(other);
+    var simpleA = getSimpleOp(this), simpleB = getSimpleOp(other);
+    if (!simpleA || !simpleB) { return false; }
+
+    if (isInsert(simpleA) && isInsert(simpleB)) {
+      return startA + simpleA.length === startB;
+    }
+
+    if (isDelete(simpleA) && isDelete(simpleB)) {
+      // there are two possibilities to delete: with backspace and with the
+      // delete key.
+      return (startB - simpleB === startA) || startA === startB;
+    }
+
+    return false;
+  };
+```
+
+どちらか一方が、Simpleな操作でないならfalse
+
+両方が挿入なら、Aの挿入後のIndexと、BのstartIndexが一致するかどうか
+
+両方が削除なら、Bの削除後の位置とAのstartIndexが等しい、
+または、AとBのstartIndexが等しい
+
+###### shouldBeComposedWithInverted
+```javascript
+  TextOperation.prototype.shouldBeComposedWithInverted = function (other) {
+    if (this.isNoop() || other.isNoop()) { return true; }
+
+    var startA = getStartIndex(this), startB = getStartIndex(other);
+    var simpleA = getSimpleOp(this), simpleB = getSimpleOp(other);
+    if (!simpleA || !simpleB) { return false; }
+
+    if (isInsert(simpleA) && isInsert(simpleB)) {
+      return startA + simpleA.length === startB || startA === startB;
+    }
+
+    if (isDelete(simpleA) && isDelete(simpleB)) {
+      return startB - simpleB === startA;
+    }
+
+    return false;
+  };
+```
+
+どちらか一方が、Simpleな操作でないならfalse
+
+両方が挿入なら、Aの挿入後のIndexと、BのstartIndexが一致するかどうか、
+または、AとBのstartIndexが等しい
+
+両方が削除なら、Bの削除後の位置とAのstartIndexが等しい、
 
 
 
