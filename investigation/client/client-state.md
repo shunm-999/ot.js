@@ -1,30 +1,3 @@
-# Client
-
-## Constructor
-
-```javascript
-  function Client (revision) {
-    this.revision = revision; // the next expected revision number
-    this.state = synchronized_; // start state
-  }
-```
-
-revision : バージョン
-state : 
-
-```javascript
-function Synchronized () {}
-function AwaitingConfirm (outstanding) {
-    // Save the pending operation
-    this.outstanding = outstanding;
-}
-function AwaitingWithBuffer (outstanding, buffer) {
-    // Save the pending operation and the user's edits since then
-    this.outstanding = outstanding;
-    this.buffer = buffer;
-}
-```
-
 このコードは、リアルタイム共同編集システムで使われる**クライアント側の状態管理クラス**を定義しています。それぞれのクラスは、サーバーとの同期状態に応じた異なるクライアントの状態を表現します。以下に、それぞれのクラスについて詳しく解説します。
 
 ### クラスの概要
@@ -57,12 +30,12 @@ function AwaitingConfirm (outstanding) {
 その応答を待っている状態を表します。
 この状態には次のような特徴があります：
 
-- **保留中の操作（`outstanding`）を保持**: 
-ユーザーが編集操作を行うと、クライアントはその操作をサーバーに送信しますが、
-サーバーからの確認応答（ACK）を受け取るまで、`outstanding` プロパティにその操作を保存しておきます。
+- **保留中の操作（`outstanding`）を保持**:
+  ユーザーが編集操作を行うと、クライアントはその操作をサーバーに送信しますが、
+  サーバーからの確認応答（ACK）を受け取るまで、`outstanding` プロパティにその操作を保存しておきます。
 
 - **サーバーからの応答待ち**: この状態ではサーバーからの応答を待っており、
-サーバーが確認応答を返すと `Synchronized` 状態に戻ります。
+  サーバーが確認応答を返すと `Synchronized` 状態に戻ります。
 
 ### 3. `AwaitingWithBuffer`
 ```javascript
@@ -77,9 +50,9 @@ function AwaitingWithBuffer (outstanding, buffer) {
 
 - **`outstanding`**: `AwaitingConfirm` と同様、サーバーに送信したがまだ応答がない操作を保持しています。
 - **`buffer`**: `AwaitingConfirm` 状態でさらにユーザーが編集を行った場合、
-その新しい操作が `buffer` に追加されます。 
-この状態でクライアントがサーバーの応答を待ちながらユーザーがさらに編集操作を行っても、
-クライアントは一貫した操作順序を維持できます。
+  その新しい操作が `buffer` に追加されます。
+  この状態でクライアントがサーバーの応答を待ちながらユーザーがさらに編集操作を行っても、
+  クライアントは一貫した操作順序を維持できます。
 
 ### まとめ
 - **`Synchronized`**: クライアントとサーバーが完全に同期している状態。
