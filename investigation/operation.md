@@ -401,8 +401,193 @@ Undoでひとつ前の操作を打ち消すため
 両方が挿入なら、Aの挿入後のIndexと、BのstartIndexが一致するかどうか、
 または、AとBのstartIndexが等しい
 
-両方が削除なら、Bの削除後の位置とAのstartIndexが等しい、
+両方が削除なら、Bの削除後の位置とAのstartIndexが等しい
 
 
+##### Transform
+同時に発生したOperationを一つにまとめる
 
+###### op1が挿入
+
+```javascript
+      if (isInsert(op1)) {
+        operation1prime.insert(op1);
+        operation2prime.retain(op1.length);
+        op1 = ops1[i1++];
+        continue;
+      }
+```
+op1pにop1を挿入
+op2pのカーソルをop1分進める
+op1は一つ進む
+
+###### op2が挿入
+
+```javascript
+
+      if (isInsert(op2)) {
+        operation1prime.retain(op2.length);
+        operation2prime.insert(op2);
+        op2 = ops2[i2++];
+        continue;
+      }
+```
+
+op1pのカーソルをop2分進める
+op2pにop2を挿入
+op2は一つ進む
+
+
+##### op1とop2が**保持**
+
+```javascript
+      var minl;
+      if (isRetain(op1) && isRetain(op2)) {
+        // Simple case: retain/retain
+        if (op1 > op2) {
+          minl = op2;
+          op1 = op1 - op2;
+          op2 = ops2[i2++];
+        } else if (op1 === op2) {
+          minl = op2;
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          minl = op1;
+          op2 = op2 - op1;
+          op1 = ops1[i1++];
+        }
+        operation1prime.retain(minl);
+        operation2prime.retain(minl);
+      }
+```
+
+###### op1 > op2
+minl = op2
+op1をop2分減らす
+op2を一つ進める
+
+###### op1 == op2
+minl = op2
+op1を一つ進める
+op2を一つ進める
+
+###### op1 < op2
+minl = op1;
+op2をop1分減らす
+op1を一つ進める
+
+operation1primeをminl分保持
+operation2primeをminl分保持
+
+##### op1とop2が**削除**
+
+```javascript
+      } else if (isDelete(op1) && isDelete(op2)) {
+        // Both operations delete the same string at the same position. We don't
+        // need to produce any operations, we just skip over the delete ops and
+        // handle the case that one operation deletes more than the other.
+        if (-op1 > -op2) {
+          op1 = op1 - op2;
+          op2 = ops2[i2++];
+        } else if (op1 === op2) {
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          op2 = op2 - op1;
+          op1 = ops1[i1++];
+        }
+      // next two cases: delete/retain and retain/delete
+      }
+```
+
+###### op1の削除数 > op2の削除数
+op1の削除数を、op2分減らす
+op2を一つ進める
+
+###### op1の削除数 = op2の削除数
+op1を一つ進める
+op2を一つ進める
+
+###### op1の削除数 < op2の削除数
+op2の削除数を、op1分減らす
+op1を一つ進める
+
+
+##### op1が**削除**、op2が**保持**
+```javascript
+      } else if (isDelete(op1) && isRetain(op2)) {
+        if (-op1 > op2) {
+          minl = op2;
+          op1 = op1 + op2;
+          op2 = ops2[i2++];
+        } else if (-op1 === op2) {
+          minl = op2;
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          minl = -op1;
+          op2 = op2 + op1;
+          op1 = ops1[i1++];
+        }
+        operation1prime['delete'](minl);
+      }
+```
+
+###### op1の削除数 > op2の保持数
+minl = op2の保持数
+op1の削除数を、op2の保持数だけ減らす
+op2をひとつ進める
+
+###### op1の削除数 = op2の保持数
+minl = op2の保持数
+op1をひとつ進める
+op2をひとつ進める
+
+###### op1の削除数 < op2の保持数
+minl = op1の削除数
+op2の保持数を、op1の削除数だけ減らす
+op1をひとつ進める
+
+
+operation1primeをminl分削除
+
+
+##### op1が**保持**、op2が削除
+
+```javascript
+      } else if (isRetain(op1) && isDelete(op2)) {
+        if (op1 > -op2) {
+          minl = -op2;
+          op1 = op1 + op2;
+          op2 = ops2[i2++];
+        } else if (op1 === -op2) {
+          minl = op1;
+          op1 = ops1[i1++];
+          op2 = ops2[i2++];
+        } else {
+          minl = op1;
+          op2 = op2 + op1;
+          op1 = ops1[i1++];
+        }
+        operation2prime['delete'](minl);
+      } 
+```
+
+###### op1の保持数 > op2の削除数
+minl = op2の削除数
+op1の保持数を、op2の削除数だけ減らす
+op2を一つ進める
+
+###### op1の保持数 = op2の削除数
+minl = op1の保持数
+op1を一つ進める
+op2を一つ進める
+
+###### op1の保持数 < op2の削除数
+minl = op1の保持数
+op2の削除数をop1の保持数だけ減らす
+op1を一つ進める
+
+operation2primeをminl分削除
 
