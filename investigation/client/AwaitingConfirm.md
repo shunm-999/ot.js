@@ -73,3 +73,13 @@ Synchronizedに遷移
 ```
 サーバーから受け取った選択範囲に、応答待ちの操作を適用する
 
+### 再送信
+```javascript
+  AwaitingConfirm.prototype.resend = function (client) {
+    // The confirm didn't come because the client was disconnected.
+    // Now that it has reconnected, we resend the outstanding operation.
+    client.sendOperation(client.revision, this.outstanding);
+  };
+```
+
+応答待ちの操作を、もう一度送る
